@@ -17,8 +17,11 @@ import ewewukek.gl.*;
 public class Main {
 
     public static final String WINDOW_TITLE = "engine-test";
+    public static final int WINDOW_WIDTH = 1024;
+    public static final int WINDOW_HEIGHT = 768;
 
     private long window;
+
 
     public static void main(String[] args) {
         new Main();
@@ -54,12 +57,9 @@ public class Main {
         glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-        glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_FALSE);
+        glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
 
-        final int WIDTH = 1024;
-        final int HEIGHT = 768;
-
-        window = glfwCreateWindow(WIDTH, HEIGHT, WINDOW_TITLE, NULL, NULL);
+        window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE, NULL, NULL);
         if ( window == NULL )
             throw new RuntimeException("Failed to create the GLFW window");
 
@@ -71,8 +71,8 @@ public class Main {
         GLFWVidMode vidmode = glfwGetVideoMode(glfwGetPrimaryMonitor());
         glfwSetWindowPos(
             window,
-            (vidmode.width() - WIDTH) / 2,
-            (vidmode.height() - HEIGHT) / 2
+            (vidmode.width() - WINDOW_WIDTH) / 2,
+            (vidmode.height() - WINDOW_HEIGHT) / 2
         );
 
         glfwMakeContextCurrent(window);
@@ -94,14 +94,38 @@ public class Main {
 
         Shader shader = new Shader("textured");
 
-        Texture texture = new Texture("test/test.png");
-        Mesh mesh = new Mesh("test/test");
+        Texture test_tex = new Texture("test/test.png");
+        Mesh test_mesh = new Mesh("test/test");
+
+        // Texture head_tex = new Texture("archer/head.png");
+        // Mesh head_mesh = new Mesh("archer/head");
+        // Texture upper_tex = new Texture("archer/upper.png");
+        // Mesh upper_mesh = new Mesh("archer/upper");
+        // Texture lower_tex = new Texture("archer/lower.png");
+        // Mesh lower_mesh = new Mesh("archer/lower");
+        // Texture bow_tex = new Texture("archer/bow.png");
+        // Mesh bow_mesh = new Mesh("archer/bow");
+
+        Matrix4f projectionMatrix = new Matrix4f();
+        final float ratio = (float)WINDOW_WIDTH/WINDOW_HEIGHT;
+        final float fovy = (float)Math.toRadians(70);
+        projectionMatrix.setPerspective(fovy, ratio, 0.01F, 100.0F);
+
+        Matrix4f viewMatrix = new Matrix4f();
+        viewMatrix.translate(0, 0, -1.5F);
+
+        // viewMatrix.translate(0, -0.5F, -1.5F);
+        // viewMatrix.scale(0.01F, 0.01F, 0.01F);
+        // viewMatrix.rotateY(-0.35F);
+        // viewMatrix.rotateX(0.5F);
 
         /// draw params
 
-        glEnable(GL_CULL_FACE);
-        glCullFace(GL_BACK);
-        glFrontFace(GL_CW);
+        // glEnable(GL_CULL_FACE);
+        // glCullFace(GL_BACK);
+        // glFrontFace(GL_CW);
+
+        glEnable(GL_DEPTH_TEST);
 
         glClearColor(0.125f, 0.125f, 0.125f, 0.0f);
 
@@ -109,15 +133,37 @@ public class Main {
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
             shader.use();
-            texture.bind();
-            mesh.draw();
+            shader.setProjectionMatrix(projectionMatrix);
+            shader.setViewMatrix(viewMatrix);
+
+            test_tex.bind(0);
+            test_mesh.draw();
+
+            // head_tex.bind(0);
+            // head_mesh.draw();
+            // upper_tex.bind(0);
+            // upper_mesh.draw();
+            // lower_tex.bind(0);
+            // lower_mesh.draw();
+            // bow_tex.bind(0);
+            // bow_mesh.draw();
 
             glfwSwapBuffers(window);
             glfwPollEvents();
         }
 
         shader.dispose();
-        texture.dispose();
-        mesh.dispose();
+
+        test_tex.dispose();
+        test_mesh.dispose();
+
+        // head_tex.dispose();
+        // head_mesh.dispose();
+        // upper_tex.dispose();
+        // upper_mesh.dispose();
+        // lower_tex.dispose();
+        // lower_mesh.dispose();
+        // bow_tex.dispose();
+        // bow_mesh.dispose();
     }
 }

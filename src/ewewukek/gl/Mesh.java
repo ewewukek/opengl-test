@@ -9,6 +9,8 @@ import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import org.lwjgl.BufferUtils;
 
+import ewewukek.util.FileUtils;
+
 public class Mesh implements IDisposable {
     int vao;
 
@@ -28,15 +30,13 @@ public class Mesh implements IDisposable {
     protected Mesh() {}
 
     public Mesh(String path) {
+        path = "res/meshes/"+path;
+
         vao = glGenVertexArrays();
         glBindVertexArray(vao);
 
-        vertexCount = 4;
-        FloatBuffer fb = BufferUtils.createFloatBuffer(vertexCount * 3);
-        fb.put(-1.0F);   fb.put(-1.0F);   fb.put(0.0F);
-        fb.put(-1.0F);   fb.put(1.0F);    fb.put(0.0F);
-        fb.put(1.0F);    fb.put(-1.0F);   fb.put(0.0F);
-        fb.put(1.0F);    fb.put(1.0F);    fb.put(0.0F);
+        FloatBuffer fb = FileUtils.readFloatBuffer(path+"_v.txt");
+        vertexCount = fb.capacity() / 3;
         fb.flip();
 
         vboPosition = glGenBuffers();
@@ -46,11 +46,7 @@ public class Mesh implements IDisposable {
         glEnableVertexAttribArray(Attribute.position);
         glVertexAttribPointer(Attribute.position, 3, GL_FLOAT, false, 0, 0);
 
-        fb = BufferUtils.createFloatBuffer(vertexCount * 2);
-        fb.put(0.0F);    fb.put(0.0F);
-        fb.put(0.0F);    fb.put(1.0F);
-        fb.put(1.0F);    fb.put(0.0F);
-        fb.put(1.0F);    fb.put(1.0F);
+        fb = FileUtils.readFloatBuffer(path+"_vt.txt");
         fb.flip();
 
         vboTexCoord = glGenBuffers();
@@ -60,22 +56,16 @@ public class Mesh implements IDisposable {
         glEnableVertexAttribArray(Attribute.texture);
         glVertexAttribPointer(Attribute.texture, 2, GL_FLOAT, false, 0, 0);
 
-        triangleStripElementCount = 3;
-        IntBuffer ib = BufferUtils.createIntBuffer(triangleStripElementCount);
-        ib.put(0);
-        ib.put(1);
-        ib.put(2);
+        IntBuffer ib = FileUtils.readIntBuffer(path+"_tri_s.txt");
+        triangleStripElementCount = ib.capacity();
         ib.flip();
 
         vboTriangleStrip = glGenBuffers();
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboTriangleStrip);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, ib, GL_STATIC_DRAW);
 
-        trianglesElementCount = 3;
-        ib = BufferUtils.createIntBuffer(trianglesElementCount);
-        ib.put(2);
-        ib.put(1);
-        ib.put(3);
+        ib = FileUtils.readIntBuffer(path+"_tris.txt");
+        trianglesElementCount = ib.capacity();
         ib.flip();
 
         vboTriangles = glGenBuffers();

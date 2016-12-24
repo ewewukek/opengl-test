@@ -5,11 +5,20 @@ import ewewukek.util.FileUtils;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL20.*;
 
+import java.nio.FloatBuffer;
+import org.lwjgl.BufferUtils;
+
+import org.joml.Matrix4f;
+
 public class Shader implements IDisposable {
+    static final FloatBuffer fb = BufferUtils.createFloatBuffer(16);
 
     int vertexShader;
     int fragmentShader;
     int shaderProgram;
+
+    int uProjectionMatrix;
+    int uViewMatrix;
 
     protected Shader() {}
 
@@ -30,22 +39,37 @@ public class Shader implements IDisposable {
         glAttachShader(shaderProgram, fragmentShader);
 
         glBindAttribLocation(shaderProgram, Attribute.position, "in_Position");
-        // glBindAttribLocation(shaderProgram, Attribute.texture, "in_TexCoord");
+        glBindAttribLocation(shaderProgram, Attribute.texture, "in_TexCoord");
         // glBindAttribLocation(shaderProgram, Attribute.normal, "in_Normal");
         // glBindAttribLocation(shaderProgram, Attribute.tangent, "in_Tangent");
 
         glLinkProgram(shaderProgram);
         checkProgramLinkStatus(shaderProgram, path);
 
-        // int uDiffuse = glGetUniformLocation(shaderProgram, "map_Diffuse");
+        uProjectionMatrix = glGetUniformLocation(shaderProgram, "projectionMatrix");
+        uViewMatrix = glGetUniformLocation(shaderProgram, "viewMatrix");
 
-        // glUseProgram(shaderProgram);
-        // glUniform1i(uDiffuse, 0);
-        // glUseProgram(0);
+        int uDiffuse = glGetUniformLocation(shaderProgram, "diffuseMap");
+
+        glUseProgram(shaderProgram);
+
+        glUniform1i(uDiffuse, 0);
+
+        glUseProgram(0);
     }
 
     public void use() {
         glUseProgram(shaderProgram);
+    }
+
+    public void setProjectionMatrix(Matrix4f proj) {
+        proj.get(fb);
+        glUniformMatrix4fv(uProjectionMatrix, false, fb);
+    }
+
+    public void setViewMatrix(Matrix4f view) {
+        view.get(fb);
+        glUniformMatrix4fv(uViewMatrix, false, fb);
     }
 
     @Override
