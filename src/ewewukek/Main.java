@@ -22,6 +22,11 @@ public class Main {
 
     private long window;
 
+    int mouseX;
+    int mouseY;
+
+    Matrix4f projectionMatrix = new Matrix4f();
+    Matrix4f viewMatrix = new Matrix4f();
 
     public static void main(String[] args) {
         new Main();
@@ -43,10 +48,10 @@ public class Main {
     }
 
     private void create_window() {
-        GLFWErrorCallback.createPrint(System.err).set();
-
         if ( !glfwInit() )
             throw new IllegalStateException("Unable to initialize GLFW");
+
+        GLFWErrorCallback.createPrint(System.err).set();
 
         /// http://www.glfw.org/docs/latest/window_guide.html#window_hints_values
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
@@ -63,10 +68,9 @@ public class Main {
         if ( window == NULL )
             throw new RuntimeException("Failed to create the GLFW window");
 
-        glfwSetKeyCallback(window, (window, key, scancode, action, mods) -> {
-            if ( key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE )
-                glfwSetWindowShouldClose(window, true);
-        });
+        glfwMakeContextCurrent(window);
+
+        glfwSwapInterval(1); // v-sync
 
         GLFWVidMode vidmode = glfwGetVideoMode(glfwGetPrimaryMonitor());
         glfwSetWindowPos(
@@ -75,16 +79,41 @@ public class Main {
             (vidmode.height() - WINDOW_HEIGHT) / 2
         );
 
-        glfwMakeContextCurrent(window);
-
-        glfwSwapInterval(1); // v-sync
-
         glfwShowWindow(window);
+
+        GL.createCapabilities(); // LWJGL's interoperation with GLFW's OpenGL context
+
+        resize(WINDOW_WIDTH, WINDOW_HEIGHT);
+
+        glfwSetFramebufferSizeCallback(window, (window, width, height) -> {
+            resize(width, height);
+        });
+
+        glfwSetKeyCallback(window, (window, key, scancode, action, mods) -> {
+            if ( key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE )
+                glfwSetWindowShouldClose(window, true);
+        });
+
+        glfwSetCursorPosCallback(window, (window, x, y) -> {
+            mouseX = (int)x;
+            mouseY = (int)y;
+        });
+
+        glfwSetMouseButtonCallback(window, (window, button, action, mods) -> {
+        });
+
+        glfwSetScrollCallback(window, (window, xoff, yoff) -> {
+        });
+    }
+
+    private void resize(int width, int height) {
+        final float ratio = (float)width/height;
+        final float fovy = (float)Math.toRadians(70);
+        projectionMatrix.setPerspective(fovy, ratio, 0.01F, 100.0F);
+        glViewport(0, 0, width, height);
     }
 
     private void run() {
-        GL.createCapabilities(); // LWJGL's interoperation with GLFW's OpenGL context
-
         System.out.println("GL_VENDOR: "+glGetString(GL_VENDOR));
         System.out.println("GL_RENDERER: "+glGetString(GL_RENDERER));
         System.out.println("GL_VERSION: "+glGetString(GL_VERSION));
@@ -106,13 +135,7 @@ public class Main {
         // Texture bow_tex = new Texture("archer/bow.png");
         // Mesh bow_mesh = new Mesh("archer/bow");
 
-        Matrix4f projectionMatrix = new Matrix4f();
-        final float ratio = (float)WINDOW_WIDTH/WINDOW_HEIGHT;
-        final float fovy = (float)Math.toRadians(70);
-        projectionMatrix.setPerspective(fovy, ratio, 0.01F, 100.0F);
-
-        Matrix4f viewMatrix = new Matrix4f();
-        viewMatrix.translate(0, 0, -1.5F);
+        viewMatrix.translate(0, 0, -3F);
 
         // viewMatrix.translate(0, -0.5F, -1.5F);
         // viewMatrix.scale(0.01F, 0.01F, 0.01F);
