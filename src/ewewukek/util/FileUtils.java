@@ -43,6 +43,7 @@ public class FileUtils {
 
     public static FloatBuffer readFloatBuffer(String path) {
         String raw = readFile(path);
+        if (raw.length() == 0) return null;
         String[] values = splitStringByChar(raw, ',');
         FloatBuffer fb = BufferUtils.createFloatBuffer(values.length);
         for (String v: values) {
@@ -53,6 +54,7 @@ public class FileUtils {
 
     public static IntBuffer readIntBuffer(String path) {
         String raw = readFile(path);
+        if (raw.length() == 0) return null;
         String[] values = splitStringByChar(raw, ',');
         IntBuffer ib = BufferUtils.createIntBuffer(values.length);
         for (String v: values) {

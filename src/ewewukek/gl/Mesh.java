@@ -57,20 +57,24 @@ public class Mesh implements IDisposable {
         glVertexAttribPointer(Attribute.texture, 2, GL_FLOAT, false, 0, 0);
 
         IntBuffer ib = FileUtils.readIntBuffer(path+"_tri_s.txt");
-        triangleStripElementCount = ib.capacity();
-        ib.flip();
+        if (ib != null) {
+            triangleStripElementCount = ib.capacity();
+            ib.flip();
 
-        vboTriangleStrip = glGenBuffers();
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboTriangleStrip);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, ib, GL_STATIC_DRAW);
+            vboTriangleStrip = glGenBuffers();
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboTriangleStrip);
+            glBufferData(GL_ELEMENT_ARRAY_BUFFER, ib, GL_STATIC_DRAW);
+        }
 
         ib = FileUtils.readIntBuffer(path+"_tris.txt");
-        trianglesElementCount = ib.capacity();
-        ib.flip();
+        if (ib != null) {
+            trianglesElementCount = ib.capacity();
+            ib.flip();
 
-        vboTriangles = glGenBuffers();
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboTriangles);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, ib, GL_STATIC_DRAW);
+            vboTriangles = glGenBuffers();
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboTriangles);
+            glBufferData(GL_ELEMENT_ARRAY_BUFFER, ib, GL_STATIC_DRAW);
+        }
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
         glBindVertexArray(0);
@@ -79,11 +83,15 @@ public class Mesh implements IDisposable {
     public void draw() {
         glBindVertexArray(vao);
 
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboTriangleStrip);
-        glDrawElements(GL_TRIANGLE_STRIP, triangleStripElementCount, GL_UNSIGNED_INT, 0);
+        if (triangleStripElementCount > 0) {
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboTriangleStrip);
+            glDrawElements(GL_TRIANGLE_STRIP, triangleStripElementCount, GL_UNSIGNED_INT, 0);
+        }
 
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboTriangles);
-        glDrawElements(GL_TRIANGLES, trianglesElementCount, GL_UNSIGNED_INT, 0);
+        if (trianglesElementCount > 0) {
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboTriangles);
+            glDrawElements(GL_TRIANGLES, trianglesElementCount, GL_UNSIGNED_INT, 0);
+        }
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
         glBindVertexArray(0);

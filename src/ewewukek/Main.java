@@ -135,29 +135,40 @@ public class Main {
         // Texture bow_tex = new Texture("archer/bow.png");
         // Mesh bow_mesh = new Mesh("archer/bow");
 
-        viewMatrix.translate(0, 0, -3F);
-
-        // viewMatrix.translate(0, -0.5F, -1.5F);
-        // viewMatrix.scale(0.01F, 0.01F, 0.01F);
-        // viewMatrix.rotateY(-0.35F);
-        // viewMatrix.rotateX(0.5F);
-
         /// draw params
 
-        // glEnable(GL_CULL_FACE);
-        // glCullFace(GL_BACK);
-        // glFrontFace(GL_CW);
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_BACK);
+        glFrontFace(GL_CCW);
 
         glEnable(GL_DEPTH_TEST);
 
         glClearColor(0.125f, 0.125f, 0.125f, 0.0f);
 
+        float pitch = 0;
+        float yaw = 0;
+
         while ( !glfwWindowShouldClose(window) ) {
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+            viewMatrix.identity();
+
+            // viewMatrix.translate(0, -0.85F, -2F);
+            // viewMatrix.scale(0.015F, 0.015F, 0.015F);
+
+            viewMatrix.translate(0, 0, -3f);
+            viewMatrix.rotateY(yaw);
+            viewMatrix.rotateX(pitch);
+
+            // viewMatrix.rotateY(-0.35F);
+            // viewMatrix.rotateX(0.25F);
 
             shader.use();
             shader.setProjectionMatrix(projectionMatrix);
             shader.setViewMatrix(viewMatrix);
+
+            pitch += -0.01f;
+            yaw += 0.0075f;
 
             test_tex.bind(0);
             test_mesh.draw();
@@ -177,8 +188,8 @@ public class Main {
 
         shader.dispose();
 
-        test_tex.dispose();
-        test_mesh.dispose();
+        // test_tex.dispose();
+        // test_mesh.dispose();
 
         // head_tex.dispose();
         // head_mesh.dispose();
