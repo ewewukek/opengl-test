@@ -15,6 +15,7 @@ import static org.lwjgl.system.MemoryUtil.*;
 import java.nio.FloatBuffer;
 import org.lwjgl.BufferUtils;
 
+import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 
 import ewewukek.gl.*;
@@ -32,6 +33,11 @@ public class Main {
 
     Matrix4f projectionMatrix = new Matrix4f();
     Matrix4f viewMatrix = new Matrix4f();
+    Matrix3f normalMatrix = new Matrix3f();
+
+    boolean rotate_mesh = true;
+    float rotation_pitch = 0.0f;
+    float rotation_yaw = 0.0f;
 
     public static void main(String[] args) {
         new Main();
@@ -97,6 +103,12 @@ public class Main {
         glfwSetKeyCallback(window, (window, key, scancode, action, mods) -> {
             if ( key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE )
                 glfwSetWindowShouldClose(window, true);
+            if ( key == GLFW_KEY_SPACE && action == GLFW_PRESS )
+                rotate_mesh = !rotate_mesh;
+            if ( key == GLFW_KEY_ENTER && action == GLFW_PRESS ) {
+                rotation_pitch = 0.0f;
+                rotation_yaw = 0.0f;
+            }
         });
 
         glfwSetCursorPosCallback(window, (window, x, y) -> {
@@ -129,7 +141,7 @@ public class Main {
         Mesh mesh = new Mesh("res/meshes/test");
 
         // Shader shader = new Shader("res/shaders/colored");
-        Shader shader = new Shader("res/shaders/textured");
+        Shader shader = new Shader("res/shaders/bump");
 
         System.out.println("uniforms:");
         int count = shader.getUniformCount();
@@ -144,7 +156,9 @@ public class Main {
 
         mesh.bindAttributes(shader);
 
-        Texture test_tex = new Texture("res/textures/test/test.png");
+        Texture test_diffuse = new Texture("res/textures/test/test.png");
+        Texture test_normal = new Texture("res/textures/test/test_n.png");
+        Texture test_specular = new Texture("res/textures/test/test_s.png");
 
         /// draw params
 
@@ -156,9 +170,6 @@ public class Main {
 
         glClearColor(0.125f, 0.125f, 0.125f, 0.0f);
 
-        float pitch = 0;
-        float yaw = 0;
-
         FloatBuffer fb = BufferUtils.createFloatBuffer(16);
 
         while ( !glfwWindowShouldClose(window) ) {
@@ -167,9 +178,14 @@ public class Main {
             viewMatrix.identity();
 
             viewMatrix.translate(0, 0, -3f);
-            viewMatrix.rotateY(yaw);
-            viewMatrix.rotateX(pitch);
-            viewMatrix.scale(0.5f, 0.5f, 0.5f);
+
+            viewMatrix.rotateY(rotation_yaw);
+            viewMatrix.rotateX(rotation_pitch);
+
+            normalMatrix.identity();
+
+            normalMatrix.rotateY(rotation_yaw);
+            normalMatrix.rotateX(rotation_pitch);
 
             projectionMatrix.get(fb);
             glUniformMatrix4fv(0, false, fb);
@@ -177,12 +193,23 @@ public class Main {
             viewMatrix.get(fb);
             glUniformMatrix4fv(1, false, fb);
 
-            glUniform1i(2, 0);
+            normalMatrix.get(fb);
+            glUniformMatrix3fv(2, false, fb);
 
-            pitch += -0.01f * 2;
-            yaw += 0.0075f * 2;
+            glUniform1i(3, 0);
+            glUniform1i(4, 1);
+            glUniform1i(5, 2);
 
-            test_tex.bind(0);
+            glUniform3f(6, (mouseX - 512) / 384.0f, (384 - mouseY) / 384.0f, 1);
+
+            if (rotate_mesh) {
+                rotation_pitch += -0.01f;
+                rotation_yaw += 0.0075f;
+            }
+
+            test_diffuse.bind(0);
+            test_normal.bind(1);
+            test_specular.bind(2);
 
             mesh.draw();
 
