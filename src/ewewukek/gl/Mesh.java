@@ -96,6 +96,5 @@ public class Mesh implements IDisposable {
 
     @Override
     public void dispose() {
-        // TODO: put some code
     }
 }

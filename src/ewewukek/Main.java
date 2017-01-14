@@ -187,20 +187,15 @@ public class Main {
             normalMatrix.rotateY(rotation_yaw);
             normalMatrix.rotateX(rotation_pitch);
 
-            projectionMatrix.get(fb);
-            glUniformMatrix4fv(0, false, fb);
+            shader.setUniform("projectionMatrix", projectionMatrix);
+            shader.setUniform("viewMatrix", viewMatrix);
+            shader.setUniform("normalMatrix", normalMatrix);
 
-            viewMatrix.get(fb);
-            glUniformMatrix4fv(1, false, fb);
+            shader.setUniform("diffuseMap", 0);
+            shader.setUniform("normalMap", 1);
+            shader.setUniform("specularMap", 2);
 
-            normalMatrix.get(fb);
-            glUniformMatrix3fv(2, false, fb);
-
-            glUniform1i(3, 0);
-            glUniform1i(4, 1);
-            glUniform1i(5, 2);
-
-            glUniform3f(6, (mouseX - 512) / 384.0f, (384 - mouseY) / 384.0f, 1);
+            shader.setUniform("lightdir", (mouseX - 512) / 384.0f, (384 - mouseY) / 384.0f, 1);
 
             if (rotate_mesh) {
                 rotation_pitch += -0.01f;

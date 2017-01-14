@@ -81,7 +81,6 @@ public class Buffer implements IDisposable {
 
     @Override
     public void dispose() {
-        // TODO: implement refcounter
         glDeleteBuffers(glBuffer);
         glBuffer = 0;
     }
