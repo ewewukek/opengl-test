@@ -7,9 +7,7 @@ import org.lwjgl.opengl.*;
 import static org.lwjgl.glfw.Callbacks.*;
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL20.*;
-import static org.lwjgl.opengl.GL30.*;
 import static org.lwjgl.system.MemoryUtil.*;
 
 import java.nio.FloatBuffer;
@@ -138,27 +136,22 @@ public class Main {
 
         /// load stuff
 
-        Mesh mesh = new Mesh("res/meshes/test");
-
         // Shader shader = new Shader("res/shaders/colored");
         Shader shader = new Shader("res/shaders/bump");
+
+        Model model = new Model();
+        model.addMesh("default", new Mesh("res/meshes/test"))
+            .setShader(shader)
+            .setTexture("diffuseMap", new Texture("res/textures/test/test.png"))
+            .setTexture("normalMap", new Texture("res/textures/test/test_n.png"))
+            .setTexture("specularMap", new Texture("res/textures/test/test_s.png"))
+            ;
 
         System.out.println("uniforms:");
         int count = shader.getUniformCount();
         for (int i=0; i!=count; ++i) {
             System.out.println(shader.getUniform(i));
         }
-
-        shader.use();
-
-        int vao = glGenVertexArrays();
-        glBindVertexArray(vao);
-
-        mesh.bindAttributes(shader);
-
-        Texture test_diffuse = new Texture("res/textures/test/test.png");
-        Texture test_normal = new Texture("res/textures/test/test_n.png");
-        Texture test_specular = new Texture("res/textures/test/test_s.png");
 
         /// draw params
 
@@ -191,10 +184,6 @@ public class Main {
             shader.setUniform("viewMatrix", viewMatrix);
             shader.setUniform("normalMatrix", normalMatrix);
 
-            shader.setUniform("diffuseMap", 0);
-            shader.setUniform("normalMap", 1);
-            shader.setUniform("specularMap", 2);
-
             shader.setUniform("lightdir", (mouseX - 512) / 384.0f, (384 - mouseY) / 384.0f, 1);
 
             if (rotate_mesh) {
@@ -202,11 +191,7 @@ public class Main {
                 rotation_yaw += 0.0075f;
             }
 
-            test_diffuse.bind(0);
-            test_normal.bind(1);
-            test_specular.bind(2);
-
-            mesh.draw();
+            model.draw();
 
             glfwSwapBuffers(window);
             glfwPollEvents();

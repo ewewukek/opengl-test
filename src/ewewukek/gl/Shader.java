@@ -112,8 +112,14 @@ public class Shader implements IDisposable {
         public String toString() { return ""+location+": "+GLTypes.toString(type)+" "+name+(size > 1?"["+size+"]":""); }
     }
 
-    public void setUniform(String name, float x) {
+    private Variable findUniformWarn(String name) {
         Variable u = uniformMap.get(name);
+        if (u == null) System.err.println("uniform "+name+" not found in shader");
+        return u;
+    }
+
+    public void setUniform(String name, float x) {
+        Variable u = findUniformWarn(name);
         if (u == null) return;
         if (u.type != GL_FLOAT) throw new IllegalStateException("can't put float into "+GLTypes.toString(u.getType()));
         glUniform1f(u.getLocation(), x);
@@ -124,7 +130,7 @@ public class Shader implements IDisposable {
     }
 
     public void setUniform(String name, float x, float y) {
-        Variable u = uniformMap.get(name);
+        Variable u = findUniformWarn(name);
         if (u == null) return;
         if (u.type != GL_FLOAT_VEC2) throw new IllegalStateException("can't put vec2 into "+GLTypes.toString(u.getType()));
         glUniform2f(u.getLocation(), x, y);
@@ -135,14 +141,14 @@ public class Shader implements IDisposable {
     }
 
     public void setUniform(String name, float x, float y, float z) {
-        Variable u = uniformMap.get(name);
+        Variable u = findUniformWarn(name);
         if (u == null) return;
         if (u.type != GL_FLOAT_VEC3) throw new IllegalStateException("can't put vec3 into "+GLTypes.toString(u.getType()));
         glUniform3f(u.getLocation(), x, y, z);
     }
 
     public void setUniform(String name, int i) {
-        Variable u = uniformMap.get(name);
+        Variable u = findUniformWarn(name);
         if (u == null) return;
         if (u.type != GL_UNSIGNED_INT
             && u.type != GL_SAMPLER_2D) throw new IllegalStateException("can't put uint into "+GLTypes.toString(u.getType()));
@@ -150,7 +156,7 @@ public class Shader implements IDisposable {
     }
 
     public void setUniform(String name, Matrix3f mat) {
-        Variable u = uniformMap.get(name);
+        Variable u = findUniformWarn(name);
         if (u == null) return;
         mat.get(fb);
         if (u.type != GL_FLOAT_MAT3) throw new IllegalStateException("can't put mat3 into "+GLTypes.toString(u.getType()));
@@ -158,7 +164,7 @@ public class Shader implements IDisposable {
     }
 
     public void setUniform(String name, Matrix4f mat) {
-        Variable u = uniformMap.get(name);
+        Variable u = findUniformWarn(name);
         if (u == null) return;
         mat.get(fb);
         if (u.type != GL_FLOAT_MAT4) throw new IllegalStateException("can't put mat4 into "+GLTypes.toString(u.getType()));
