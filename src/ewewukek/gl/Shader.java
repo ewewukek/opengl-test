@@ -1,82 +1,109 @@
 package ewewukek.gl;
 
-import ewewukek.util.FileUtils;
+import java.util.Map;
+import java.util.HashMap;
+
+import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
+import org.lwjgl.BufferUtils;
 
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL20.*;
 
-import java.nio.FloatBuffer;
-import org.lwjgl.BufferUtils;
-
-import org.joml.Matrix4f;
+import ewewukek.io.FileUtils;
+import ewewukek.common.IDisposable;
 
 public class Shader implements IDisposable {
-    static final FloatBuffer fb = BufferUtils.createFloatBuffer(16);
+    // static final FloatBuffer fb = BufferUtils.createFloatBuffer(16);
 
-    int vertexShader;
-    int fragmentShader;
-    int shaderProgram;
+    int vs;
+    int fs;
+    int program;
 
-    int uProjectionMatrix;
-    int uViewMatrix;
+    int attributeCount;
+    Map<String, Variable> attributeMap = new HashMap<>();
+    Variable[] attributeList;
+
+    int uniformCount;
+    Map<String, Variable> uniformMap = new HashMap<>();
+    Variable[] uniformList;
 
     protected Shader() {}
 
     public Shader(String path) {
-        path = "res/shaders/"+path;
-        vertexShader = glCreateShader(GL_VERTEX_SHADER);
-        glShaderSource(vertexShader, FileUtils.readFile(path+".vert.glsl"));
-        glCompileShader(vertexShader);
-        checkShaderCompileStatus(vertexShader, path+".vert.glsl");
 
-        fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-        glShaderSource(fragmentShader, FileUtils.readFile(path+".frag.glsl"));
-        glCompileShader(fragmentShader);
-        checkShaderCompileStatus(fragmentShader, path+".frag.glsl");
+        vs = glCreateShader(GL_VERTEX_SHADER);
+        glShaderSource(vs, FileUtils.readFile(path+".vert.glsl"));
+        glCompileShader(vs);
+        checkShaderCompileStatus(vs, path+".vert.glsl");
 
-        shaderProgram = glCreateProgram();
-        glAttachShader(shaderProgram, vertexShader);
-        glAttachShader(shaderProgram, fragmentShader);
+        fs = glCreateShader(GL_FRAGMENT_SHADER);
+        glShaderSource(fs, FileUtils.readFile(path+".frag.glsl"));
+        glCompileShader(fs);
+        checkShaderCompileStatus(fs, path+".frag.glsl");
 
-        glBindAttribLocation(shaderProgram, Attribute.position, "in_Position");
-        glBindAttribLocation(shaderProgram, Attribute.texture, "in_TexCoord");
-        // glBindAttribLocation(shaderProgram, Attribute.normal, "in_Normal");
-        // glBindAttribLocation(shaderProgram, Attribute.tangent, "in_Tangent");
+        program = glCreateProgram();
+        glAttachShader(program, vs);
+        glAttachShader(program, fs);
 
-        glLinkProgram(shaderProgram);
-        checkProgramLinkStatus(shaderProgram, path);
+        glLinkProgram(program);
+        checkProgramLinkStatus(program, path);
 
-        uProjectionMatrix = glGetUniformLocation(shaderProgram, "projectionMatrix");
-        uViewMatrix = glGetUniformLocation(shaderProgram, "viewMatrix");
+        IntBuffer sizeTmp = BufferUtils.createIntBuffer(1);
+        IntBuffer typeTmp = BufferUtils.createIntBuffer(1);
 
-        int uDiffuse = glGetUniformLocation(shaderProgram, "diffuseMap");
+        attributeCount = glGetProgrami(program, GL_ACTIVE_ATTRIBUTES);
+        attributeList = new Variable[attributeCount];
+        for (int i = 0; i != attributeCount; ++i) {
+            String name = glGetActiveAttrib(program, i, 256, sizeTmp, typeTmp);
+            Variable att = new Variable(i, sizeTmp.get(), typeTmp.get(), name);
+            attributeMap.put(name, att);
+            attributeList[i] = att;
+            sizeTmp.flip();
+            typeTmp.flip();
+        }
 
-        glUseProgram(shaderProgram);
-
-        glUniform1i(uDiffuse, 0);
-
-        glUseProgram(0);
+        uniformCount = glGetProgrami(program, GL_ACTIVE_UNIFORMS);
+        uniformList = new Variable[uniformCount];
+        for (int i = 0; i != uniformCount; ++i) {
+            String name = glGetActiveUniform(program, i, 256, sizeTmp, typeTmp);
+            Variable att = new Variable(i, sizeTmp.get(), typeTmp.get(), name);
+            uniformMap.put(name, att);
+            uniformList[i] = att;
+            sizeTmp.flip();
+            typeTmp.flip();
+        }
     }
 
     public void use() {
-        glUseProgram(shaderProgram);
+        glUseProgram(program);
     }
 
-    public void setProjectionMatrix(Matrix4f proj) {
-        proj.get(fb);
-        glUniformMatrix4fv(uProjectionMatrix, false, fb);
-    }
+    public int getAttributeCount() { return attributeCount; }
+    public Variable getAttribute(String name) { return attributeMap.get(name); }
+    public Variable getAttribute(int location) { return attributeList[location]; }
 
-    public void setViewMatrix(Matrix4f view) {
-        view.get(fb);
-        glUniformMatrix4fv(uViewMatrix, false, fb);
-    }
+    public int getUniformCount() { return uniformCount; }
+    public Variable getUniform(String name) { return uniformMap.get(name); }
+    public Variable getUniform(int location) { return uniformList[location]; }
 
-    @Override
-    public void dispose() {
-        if (shaderProgram != 0) { glDeleteProgram(shaderProgram); shaderProgram = 0; }
-        if (vertexShader != 0) { glDeleteShader(vertexShader); vertexShader = 0; }
-        if (fragmentShader != 0) { glDeleteShader(fragmentShader); fragmentShader = 0; }
+    public class Variable {
+        private int location;
+        private int size;
+        private int type;
+        private String name;
+
+        private Variable(int l, int s, int t, String n) {
+            location = l; size = s; type = t; name = n;
+        }
+
+        public int getLocation() { return location; }
+        public int getSize() { return size; }
+        public int getType() { return type; }
+        public String getName() { return name; }
+
+        @Override
+        public String toString() { return ""+location+": "+GLTypes.toString(type)+" "+name+(size > 1?"["+size+"]":""); }
     }
 
     static void checkShaderCompileStatus(int shader, String path) {
@@ -85,9 +112,16 @@ public class Shader implements IDisposable {
         }
     }
 
-    static void checkProgramLinkStatus(int shaderProgram, String path) {
-        if (glGetProgrami(shaderProgram, GL_LINK_STATUS) != GL_TRUE) {
-            throw new RuntimeException(path+": "+glGetProgramInfoLog(shaderProgram, glGetProgrami(shaderProgram, GL_INFO_LOG_LENGTH)));
+    static void checkProgramLinkStatus(int program, String path) {
+        if (glGetProgrami(program, GL_LINK_STATUS) != GL_TRUE) {
+            throw new RuntimeException(path+": "+glGetShaderInfoLog(program, glGetShaderi(program, GL_INFO_LOG_LENGTH)));
         }
+    }
+
+    @Override
+    public void dispose() {
+        glDeleteShader(program); program = 0;
+        glDeleteShader(vs); vs = 0;
+        glDeleteShader(fs); fs = 0;
     }
 }

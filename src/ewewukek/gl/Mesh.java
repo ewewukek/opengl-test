@@ -1,109 +1,101 @@
 package ewewukek.gl;
 
+import java.io.File;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
+
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL20.*;
-import static org.lwjgl.opengl.GL30.*;
 
-import java.nio.FloatBuffer;
-import java.nio.IntBuffer;
-import org.lwjgl.BufferUtils;
 
-import ewewukek.util.FileUtils;
+import ewewukek.common.IDisposable;
+import static ewewukek.common.Utils.*;
 
 public class Mesh implements IDisposable {
-    int vao;
 
-    int vertexCount;
-
-    int vboPosition;
-    int vboTexCoord;
-    // int vboNormal;
-    // int vboTangent;
-
-    int triangleStripElementCount;
-    int trianglesElementCount;
-
-    int vboTriangleStrip;
-    int vboTriangles;
+    Map<String, Buffer> attributeStreams = new HashMap<>();
+    List<Buffer> primitiveStreams = new ArrayList<>();
+    List<Integer> primitiveTypes = new ArrayList<>();
 
     protected Mesh() {}
 
     public Mesh(String path) {
-        path = "res/meshes/"+path;
-
-        vao = glGenVertexArrays();
-        glBindVertexArray(vao);
-
-        FloatBuffer fb = FileUtils.readFloatBuffer(path+"_v.txt");
-        vertexCount = fb.capacity() / 3;
-        fb.flip();
-
-        vboPosition = glGenBuffers();
-        glBindBuffer(GL_ARRAY_BUFFER, vboPosition);
-        glBufferData(GL_ARRAY_BUFFER, fb, GL_STATIC_DRAW);
-
-        glEnableVertexAttribArray(Attribute.position);
-        glVertexAttribPointer(Attribute.position, 3, GL_FLOAT, false, 0, 0);
-
-        fb = FileUtils.readFloatBuffer(path+"_vt.txt");
-        fb.flip();
-
-        vboTexCoord = glGenBuffers();
-        glBindBuffer(GL_ARRAY_BUFFER, vboTexCoord);
-        glBufferData(GL_ARRAY_BUFFER, fb, GL_STATIC_DRAW);
-
-        glEnableVertexAttribArray(Attribute.texture);
-        glVertexAttribPointer(Attribute.texture, 2, GL_FLOAT, false, 0, 0);
-
-        IntBuffer ib = FileUtils.readIntBuffer(path+"_tri_s.txt");
-        if (ib != null) {
-            triangleStripElementCount = ib.capacity();
-            ib.flip();
-
-            vboTriangleStrip = glGenBuffers();
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboTriangleStrip);
-            glBufferData(GL_ELEMENT_ARRAY_BUFFER, ib, GL_STATIC_DRAW);
+        System.out.println("loading "+path);
+        for (File file: new File(path).listFiles()) {
+            String fileName = file.getName();
+            String[] parts = splitStringByChar(fileName, '.');
+            if (parts.length < 2 || parts.length > 3 || !parts[parts.length-1].equals("txt"))
+                throw new RuntimeException("wrong file name: "+fileName);
+            if (parts.length == 2) {
+                int primitiveType = 0;
+                if (parts[0].equals("points")) {
+                    primitiveType = GL_POINTS;
+                } else if (parts[0].equals("line_strip")) {
+                    primitiveType = GL_LINE_STRIP;
+                } else if (parts[0].equals("line_loop")) {
+                    primitiveType = GL_LINE_LOOP;
+                } else if (parts[0].equals("lines")) {
+                    primitiveType = GL_LINES;
+                } else if (parts[0].equals("triangle_strip")) {
+                    primitiveType = GL_TRIANGLE_STRIP;
+                } else if (parts[0].equals("triangle_fan")) {
+                    primitiveType = GL_TRIANGLE_FAN;
+                } else if (parts[0].equals("triangles")) {
+                    primitiveType = GL_TRIANGLES;
+                } else {
+                    throw new UnsupportedOperationException("primitive type not supported: "+parts[0]);
+                }
+                primitiveStreams.add(new Buffer(GL_UNSIGNED_INT, file.toString()));
+                primitiveTypes.add(primitiveType);
+                System.out.println("loaded "+parts[0]);
+            } else {
+                int type = GLTypes.toInt(parts[0]);
+                if (type == 0)
+                    throw new UnsupportedOperationException("unsupported buffer type: "+parts[0]);
+                Buffer buf = new Buffer(type, file.toString());
+                attributeStreams.put(parts[1], buf);
+                System.out.println("loaded "+parts[0]+" "+parts[1]+" "+buf.getElementCount());
+            }
         }
+    }
 
-        ib = FileUtils.readIntBuffer(path+"_tris.txt");
-        if (ib != null) {
-            trianglesElementCount = ib.capacity();
-            ib.flip();
-
-            vboTriangles = glGenBuffers();
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboTriangles);
-            glBufferData(GL_ELEMENT_ARRAY_BUFFER, ib, GL_STATIC_DRAW);
+    public void bindAttributes(Shader shader) {
+        int count = shader.getAttributeCount();
+        for (int i = 0; i != count; ++i) {
+            Shader.Variable att = shader.getAttribute(i);
+            if (att.getSize() != 1)
+                throw new UnsupportedOperationException("attribute arrays not supported");
+            Buffer buf = attributeStreams.get(att.getName());
+            if (buf == null) {
+                glDisableVertexAttribArray(att.getLocation());
+                System.out.println("disabled attrib "+att.getLocation());
+            } else {
+                if (buf.getType() != att.getType())
+                    throw new IllegalStateException("attribute type ("+GLTypes.toString(att.getType())
+                        +") doesn't match buffer's ("+GLTypes.toString(buf.getType())+")");
+                glEnableVertexAttribArray(att.getLocation());
+                buf.bind(GL_ARRAY_BUFFER);
+                buf.attribPointer(att.getLocation());
+                System.out.println("bound buffer to attrib "+att.toString());
+            }
         }
-
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-        glBindVertexArray(0);
     }
 
     public void draw() {
-        glBindVertexArray(vao);
-
-        if (triangleStripElementCount > 0) {
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboTriangleStrip);
-            glDrawElements(GL_TRIANGLE_STRIP, triangleStripElementCount, GL_UNSIGNED_INT, 0);
+        for (int i = 0; i != primitiveStreams.size(); ++i) {
+            Buffer buf = primitiveStreams.get(i);
+            int type = primitiveTypes.get(i);
+            buf.bind(GL_ELEMENT_ARRAY_BUFFER);
+            glDrawElements(type, buf.getElementCount(), buf.getElementType(), 0);
         }
-
-        if (trianglesElementCount > 0) {
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboTriangles);
-            glDrawElements(GL_TRIANGLES, trianglesElementCount, GL_UNSIGNED_INT, 0);
-        }
-
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-        glBindVertexArray(0);
     }
 
     @Override
     public void dispose() {
-        if (vboPosition != 0) { glDeleteBuffers(vboPosition); vboPosition = 0; }
-        if (vboTexCoord != 0) { glDeleteBuffers(vboTexCoord); vboTexCoord = 0; }
-        // if (vboNormal != 0) {
-        // if (vboTangent != 0) {
-        if (vboTriangleStrip != 0) { glDeleteBuffers(vboTriangleStrip); vboTriangleStrip = 0; }
-        if (vboTriangles != 0) { glDeleteBuffers(vboTriangles); vboTriangles = 0; }
+        // TODO: put some code
     }
 }

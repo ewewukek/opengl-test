@@ -7,8 +7,13 @@ import org.lwjgl.opengl.*;
 import static org.lwjgl.glfw.Callbacks.*;
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL20.*;
+import static org.lwjgl.opengl.GL30.*;
 import static org.lwjgl.system.MemoryUtil.*;
+
+import java.nio.FloatBuffer;
+import org.lwjgl.BufferUtils;
 
 import org.joml.Matrix4f;
 
@@ -121,19 +126,25 @@ public class Main {
 
         /// load stuff
 
-        Shader shader = new Shader("textured");
+        Mesh mesh = new Mesh("res/meshes/test");
 
-        Texture test_tex = new Texture("test/test.png");
-        Mesh test_mesh = new Mesh("test/test");
+        // Shader shader = new Shader("res/shaders/colored");
+        Shader shader = new Shader("res/shaders/textured");
 
-        // Texture head_tex = new Texture("archer/head.png");
-        // Mesh head_mesh = new Mesh("archer/head");
-        // Texture upper_tex = new Texture("archer/upper.png");
-        // Mesh upper_mesh = new Mesh("archer/upper");
-        // Texture lower_tex = new Texture("archer/lower.png");
-        // Mesh lower_mesh = new Mesh("archer/lower");
-        // Texture bow_tex = new Texture("archer/bow.png");
-        // Mesh bow_mesh = new Mesh("archer/bow");
+        System.out.println("uniforms:");
+        int count = shader.getUniformCount();
+        for (int i=0; i!=count; ++i) {
+            System.out.println(shader.getUniform(i));
+        }
+
+        shader.use();
+
+        int vao = glGenVertexArrays();
+        glBindVertexArray(vao);
+
+        mesh.bindAttributes(shader);
+
+        Texture test_tex = new Texture("res/textures/test/test.png");
 
         /// draw params
 
@@ -148,56 +159,35 @@ public class Main {
         float pitch = 0;
         float yaw = 0;
 
+        FloatBuffer fb = BufferUtils.createFloatBuffer(16);
+
         while ( !glfwWindowShouldClose(window) ) {
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
             viewMatrix.identity();
 
-            // viewMatrix.translate(0, -0.85F, -2F);
-            // viewMatrix.scale(0.015F, 0.015F, 0.015F);
-
             viewMatrix.translate(0, 0, -3f);
             viewMatrix.rotateY(yaw);
             viewMatrix.rotateX(pitch);
+            viewMatrix.scale(0.5f, 0.5f, 0.5f);
 
-            // viewMatrix.rotateY(-0.35F);
-            // viewMatrix.rotateX(0.25F);
+            projectionMatrix.get(fb);
+            glUniformMatrix4fv(0, false, fb);
 
-            shader.use();
-            shader.setProjectionMatrix(projectionMatrix);
-            shader.setViewMatrix(viewMatrix);
+            viewMatrix.get(fb);
+            glUniformMatrix4fv(1, false, fb);
 
-            pitch += -0.01f;
-            yaw += 0.0075f;
+            glUniform1i(2, 0);
+
+            pitch += -0.01f * 2;
+            yaw += 0.0075f * 2;
 
             test_tex.bind(0);
-            test_mesh.draw();
 
-            // head_tex.bind(0);
-            // head_mesh.draw();
-            // upper_tex.bind(0);
-            // upper_mesh.draw();
-            // lower_tex.bind(0);
-            // lower_mesh.draw();
-            // bow_tex.bind(0);
-            // bow_mesh.draw();
+            mesh.draw();
 
             glfwSwapBuffers(window);
             glfwPollEvents();
         }
-
-        shader.dispose();
-
-        // test_tex.dispose();
-        // test_mesh.dispose();
-
-        // head_tex.dispose();
-        // head_mesh.dispose();
-        // upper_tex.dispose();
-        // upper_mesh.dispose();
-        // lower_tex.dispose();
-        // lower_mesh.dispose();
-        // bow_tex.dispose();
-        // bow_mesh.dispose();
     }
 }
