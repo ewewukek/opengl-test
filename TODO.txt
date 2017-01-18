@@ -3,3 +3,4 @@ mesh dispose
 mesh auto tbn calculation
 + shader setuniform
 class Model
+resource manager / globjects reuse

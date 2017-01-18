@@ -136,16 +136,13 @@ public class Main {
 
         /// load stuff
 
-        // Shader shader = new Shader("res/shaders/colored");
         Shader shader = new Shader("res/shaders/bump");
-
         Model model = new Model();
         model.addMesh("default", new Mesh("res/meshes/test"))
             .setShader(shader)
             .setTexture("diffuseMap", new Texture("res/textures/test/test.png"))
             .setTexture("normalMap", new Texture("res/textures/test/test_n.png"))
-            .setTexture("specularMap", new Texture("res/textures/test/test_s.png"))
-            ;
+            .setTexture("specularMap", new Texture("res/textures/test/test_s.png"));
 
         System.out.println("uniforms:");
         int count = shader.getUniformCount();

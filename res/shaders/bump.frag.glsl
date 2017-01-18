@@ -20,7 +20,7 @@ void main(void) {
     vec3 l = normalize(lightdir);
 
     vec3 texel_n = (texture2D(normalMap, f_texcoord).rgb - 0.5) * 2.0;
-    vec3 normaldir = normalize( (t * texel_n.x) + (b * texel_n.y) + (n * texel_n.z * 0.5) );
+    vec3 normaldir = normalize( (t * texel_n.x) + (b * texel_n.y) + (n * texel_n.z) );
 
     float d = max(0.0, dot(l, normaldir));
 

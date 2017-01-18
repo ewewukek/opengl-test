@@ -20,19 +20,39 @@ import ewewukek.io.FileUtils;
 import ewewukek.common.IDisposable;
 
 public class Shader implements IDisposable {
+
+    public class Variable {
+        private int location;
+        private int size;
+        private int type;
+        private String name;
+
+        private Variable(int l, int s, int t, String n) {
+            location = l; size = s; type = t; name = n;
+        }
+
+        public int getLocation() { return location; }
+        public int getSize() { return size; }
+        public int getType() { return type; }
+        public String getName() { return name; }
+
+        @Override
+        public String toString() { return ""+location+": "+GLTypes.toString(type)+" "+name+(size > 1?"["+size+"]":""); }
+    }
+
     static private final FloatBuffer fb = BufferUtils.createFloatBuffer(16);
 
-    int vs;
-    int fs;
-    int program;
+    private int vs;
+    private int fs;
+    private int program;
 
-    int attributeCount;
-    Map<String, Variable> attributeMap = new HashMap<>();
-    Variable[] attributeList;
+    private int attributeCount;
+    private Map<String, Variable> attributeMap = new HashMap<>();
+    private Variable[] attributeList;
 
-    int uniformCount;
-    Map<String, Variable> uniformMap = new HashMap<>();
-    Variable[] uniformList;
+    private int uniformCount;
+    private Map<String, Variable> uniformMap = new HashMap<>();
+    private Variable[] uniformList;
 
     protected Shader() {}
 
@@ -92,25 +112,6 @@ public class Shader implements IDisposable {
     public int getUniformCount() { return uniformCount; }
     public Variable getUniform(String name) { return uniformMap.get(name); }
     public Variable getUniform(int location) { return uniformList[location]; }
-
-    public class Variable {
-        private int location;
-        private int size;
-        private int type;
-        private String name;
-
-        private Variable(int l, int s, int t, String n) {
-            location = l; size = s; type = t; name = n;
-        }
-
-        public int getLocation() { return location; }
-        public int getSize() { return size; }
-        public int getType() { return type; }
-        public String getName() { return name; }
-
-        @Override
-        public String toString() { return ""+location+": "+GLTypes.toString(type)+" "+name+(size > 1?"["+size+"]":""); }
-    }
 
     private Variable findUniformWarn(String name) {
         Variable u = uniformMap.get(name);

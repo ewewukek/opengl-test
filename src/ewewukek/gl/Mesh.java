@@ -11,15 +11,14 @@ import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL20.*;
 
-
 import ewewukek.common.IDisposable;
 import static ewewukek.common.Utils.*;
 
 public class Mesh implements IDisposable {
-
-    Map<String, Buffer> attributeStreams = new HashMap<>();
-    List<Buffer> primitiveStreams = new ArrayList<>();
-    List<Integer> primitiveTypes = new ArrayList<>();
+    private int vertexCount = -1;
+    private Map<String, Buffer> attributeStreams = new HashMap<>();
+    private List<Buffer> primitiveStreams = new ArrayList<>();
+    private List<Integer> primitiveTypes = new ArrayList<>();
 
     protected Mesh() {}
 
@@ -57,6 +56,12 @@ public class Mesh implements IDisposable {
                 if (type == 0)
                     throw new UnsupportedOperationException("unsupported buffer type: "+parts[0]);
                 Buffer buf = new Buffer(type, file.toString());
+                if (vertexCount == -1) {
+                    vertexCount = buf.getElementCount();
+                } else {
+                    if (vertexCount != buf.getElementCount())
+                        throw new IllegalStateException("buffers' vertex counts does not match");
+                }
                 attributeStreams.put(parts[1], buf);
                 System.out.println("loaded "+parts[0]+" "+parts[1]+" "+buf.getElementCount());
             }
