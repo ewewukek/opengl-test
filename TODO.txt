@@ -1,6 +1,14 @@
++ mesh auto tbn calculation
+model description file
+separate shader from model
+fast inverse tbn calculation
+parallax occlusion mapping
+animated mesh
+shadow maps
+deferred shading
+
 buffer ref counter
 mesh dispose
-mesh auto tbn calculation
 + shader setuniform
 class Model
 resource manager / globjects reuse

@@ -6,12 +6,8 @@ in vec3 normal;
 in vec3 tangent;
 in vec3 bitangent;
 
+smooth out float diff;
 smooth out vec2 f_texcoord;
-// smooth out vec3 f_lightdir;
-smooth out vec3 t;
-smooth out vec3 b;
-smooth out vec3 n;
-smooth out vec3 viewdir;
 
 uniform mat4 projectionMatrix;
 uniform mat4 viewMatrix;
@@ -26,5 +22,5 @@ void main(void) {
     f_texcoord = texcoord;
     n = normalMatrix * normal;
     t = normalMatrix * tangent;
-    b = normalMatrix * bitangent;
+    b = cross(n, t);
 }

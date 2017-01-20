@@ -10,6 +10,9 @@ import static org.lwjgl.opengl.GL20.*;
 import ewewukek.common.IDisposable;
 import ewewukek.io.FileUtils;
 
+import org.joml.Vector2f;
+import org.joml.Vector3f;
+
 public class Buffer implements IDisposable {
 
     private int glBuffer;
@@ -24,13 +27,9 @@ public class Buffer implements IDisposable {
     protected Buffer() {}
 
     public Buffer(int type, String path) {
-        this.type = type;
-        elementType = GLTypes.elementType(type);
-        elementSize = GLTypes.elementSize(type);
-        if (elementType == 0 || elementSize == 0)
-            throw new UnsupportedOperationException(GLTypes.toString(type)+" not supported yet");
+        java.nio.Buffer buffer;
 
-        switch(elementType) {
+        switch(GLTypes.elementType(type)) {
             case GL_FLOAT:
                 buffer = FileUtils.readFloatBuffer(path);
             break;
@@ -41,12 +40,36 @@ public class Buffer implements IDisposable {
                 throw new UnsupportedOperationException(GLTypes.toString(type)+" not supported yet");
         }
 
+        try {
+            setType(type);
+            setBuffer(buffer);
+        } catch(Exception e) {
+            throw new IllegalStateException("could not load "+path, e);
+        }
+    }
+
+    public Buffer(int type, java.nio.Buffer buffer) {
+        setType(type);
+        setBuffer(buffer);
+    }
+
+    private void setType(int type) {
+        this.type = type;
+        elementType = GLTypes.elementType(type);
+        elementSize = GLTypes.elementSize(type);
+        if (elementType == 0 || elementSize == 0)
+            throw new UnsupportedOperationException(GLTypes.toString(type)+" not supported yet");
+    }
+
+    private void setBuffer(java.nio.Buffer buffer) {
         if (buffer == null)
-            throw new NullPointerException(path+" is empty or doesn't exist");
+            throw new NullPointerException("null buffer provided");
         if (buffer.capacity() == 0)
-            throw new IllegalStateException(path+" is empty");
+            throw new IllegalStateException("buffer is empty");
         if (buffer.capacity() % elementSize != 0)
-            throw new IllegalStateException("wrong buffer size for "+GLTypes.toString(type)+" in "+path);
+            throw new IllegalStateException("wrong buffer size for "+GLTypes.toString(type));
+
+        this.buffer = buffer;
 
         elementCount = buffer.capacity() / elementSize;
 
@@ -68,6 +91,35 @@ public class Buffer implements IDisposable {
     public int getType() { return type; }
     public int getElementType() { return elementType; }
     public int getElementCount() { return elementCount; }
+
+    private void testTypeAndIndex(int type, int index) {
+        if (this.type != type)
+            throw new IllegalArgumentException("can't convert "+GLTypes.toString(type)+" to "+GLTypes.toString(type));
+        if (index < 0 || index >= elementCount)
+            throw new IndexOutOfBoundsException("index out of bounds :"+index);
+    }
+
+    public int getUInt(int i) {
+        testTypeAndIndex(GL_UNSIGNED_INT, i);
+        return ((IntBuffer)buffer).get(i);
+    }
+
+    public float getFloat(int i) {
+        testTypeAndIndex(GL_FLOAT, i);
+        return ((FloatBuffer)buffer).get(i);
+    }
+
+    public Vector2f getVector2f(Vector2f v, int i) {
+        testTypeAndIndex(GL_FLOAT_VEC2, i);
+        buffer.position(i*2);
+        return v.set((FloatBuffer)buffer);
+    }
+
+    public Vector3f getVector3f(Vector3f v, int i) {
+        testTypeAndIndex(GL_FLOAT_VEC3, i);
+        buffer.position(i*3);
+        return v.set((FloatBuffer)buffer);
+    }
 
     public void bind(int target) {
         if (glBuffer == 0)

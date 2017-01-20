@@ -175,6 +175,19 @@ public class GLTypes {
         return "[unknown]";
     }
 
+    public static String primitiveTypeToString(int type) {
+        switch (type) {
+            case GL_POINTS: return "GL_POINTS";
+            case GL_LINE_STRIP: return "GL_LINE_STRIP";
+            case GL_LINE_LOOP: return "GL_LINE_LOOP";
+            case GL_LINES: return "GL_LINES";
+            case GL_TRIANGLE_STRIP: return "GL_TRIANGLE_STRIP";
+            case GL_TRIANGLE_FAN: return "GL_TRIANGLE_FAN";
+            case GL_TRIANGLES: return "GL_TRIANGLES";
+        }
+        return "[unknown]";
+    }
+
     static {
         glslToIntMap.put("float", GL_FLOAT);
         glslToIntMap.put("vec2", GL_FLOAT_VEC2);

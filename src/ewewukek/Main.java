@@ -28,14 +28,19 @@ public class Main {
 
     int mouseX;
     int mouseY;
+    boolean mouseL;
+    boolean mouseR;
 
     Matrix4f projectionMatrix = new Matrix4f();
     Matrix4f viewMatrix = new Matrix4f();
     Matrix3f normalMatrix = new Matrix3f();
 
-    boolean rotate_mesh = true;
+    boolean rotate_mesh = false;
     float rotation_pitch = 0.0f;
     float rotation_yaw = 0.0f;
+    float scale = 1.0f;
+
+    float parallax_multiplier = 1.0f;
 
     public static void main(String[] args) {
         new Main();
@@ -106,18 +111,32 @@ public class Main {
             if ( key == GLFW_KEY_ENTER && action == GLFW_PRESS ) {
                 rotation_pitch = 0.0f;
                 rotation_yaw = 0.0f;
+                scale = 1.0f;
             }
+            if ( key == GLFW_KEY_P && action == GLFW_PRESS )
+                parallax_multiplier = 1.0f - parallax_multiplier;
         });
 
         glfwSetCursorPosCallback(window, (window, x, y) -> {
+            if (mouseL) {
+                rotation_pitch += (float)(y - mouseY) * 0.01f;
+                rotation_yaw += (float)(x - mouseX) * 0.01f;
+            }
             mouseX = (int)x;
             mouseY = (int)y;
         });
 
         glfwSetMouseButtonCallback(window, (window, button, action, mods) -> {
+            if ( button == 0 ) mouseL = (action == 1);
+            if ( button == 1 ) mouseR = (action == 1);
         });
 
         glfwSetScrollCallback(window, (window, xoff, yoff) -> {
+            if (yoff < 0) {
+                scale /= 1.1f;
+            } else if (yoff > 0) {
+                scale *= 1.1f;
+            }
         });
     }
 
@@ -136,19 +155,38 @@ public class Main {
 
         /// load stuff
 
+        // Shader shader = new Shader("res/shaders/parallax");
+
         Shader shader = new Shader("res/shaders/bump");
-        Model model = new Model();
-        model.addMesh("default", new Mesh("res/meshes/test"))
-            .setShader(shader)
-            .setTexture("diffuseMap", new Texture("res/textures/test/test.png"))
-            .setTexture("normalMap", new Texture("res/textures/test/test_n.png"))
-            .setTexture("specularMap", new Texture("res/textures/test/test_s.png"));
 
         System.out.println("uniforms:");
         int count = shader.getUniformCount();
         for (int i=0; i!=count; ++i) {
             System.out.println(shader.getUniform(i));
         }
+
+        Model model = new Model();
+
+        // model.addMesh("default", new Mesh("res/meshes/quad"))
+            // .setShader(shader)
+            // .setTexture("diffuseMap", new Texture("res/textures/rockwall/rockwall.png"))
+            // .setTexture("normalMap", new Texture("res/textures/rockwall/rockwall_normal.png"))
+            // .setTexture("heightMap", new Texture("res/textures/rockwall/rockwall_height.png"));
+
+        model.addMesh("default", new Mesh("res/meshes/cube", Mesh.CALCULATE_TBN))
+            .setShader(shader)
+            .setTexture("diffuseMap", new Texture("res/textures/test/test.png"))
+            .setTexture("normalMap", new Texture("res/textures/test/test_n.png"))
+            .setTexture("specularMap", new Texture("res/textures/test/test_s.png"));
+
+        shader.use();
+        shader.setUniform("lightdir", 0, 0, 1);
+
+        /// axes
+
+        // Shader shader_axes = new Shader("res/shaders/colored");
+        // Model model_axes = new Model();
+        // model_axes.addMesh("default", new Mesh("res/meshes/axes")).setShader(shader_axes);
 
         /// draw params
 
@@ -172,16 +210,22 @@ public class Main {
             viewMatrix.rotateY(rotation_yaw);
             viewMatrix.rotateX(rotation_pitch);
 
+            viewMatrix.scale(scale, scale, scale);
+
             normalMatrix.identity();
 
             normalMatrix.rotateY(rotation_yaw);
             normalMatrix.rotateX(rotation_pitch);
 
+            shader.use();
+
             shader.setUniform("projectionMatrix", projectionMatrix);
             shader.setUniform("viewMatrix", viewMatrix);
             shader.setUniform("normalMatrix", normalMatrix);
 
-            shader.setUniform("lightdir", (mouseX - 512) / 384.0f, (384 - mouseY) / 384.0f, 1);
+            // shader.setUniform("parallax_multiplier", parallax_multiplier);
+
+            if (mouseR) shader.setUniform("lightdir", (mouseX - 512) / 384.0f, (384 - mouseY) / 384.0f, 1);
 
             if (rotate_mesh) {
                 rotation_pitch += -0.01f;
@@ -189,6 +233,19 @@ public class Main {
             }
 
             model.draw();
+
+            // viewMatrix.identity();
+            // viewMatrix.translate(0,0, -3f);
+            // viewMatrix.rotateY(rotation_yaw);
+            // viewMatrix.rotateX(rotation_pitch);
+            // viewMatrix.scale(0.5f, 0.5f, 0.5f);
+
+            // shader_axes.use();
+
+            // shader_axes.setUniform("projectionMatrix", projectionMatrix);
+            // shader_axes.setUniform("viewMatrix", viewMatrix);
+
+            // model_axes.draw();
 
             glfwSwapBuffers(window);
             glfwPollEvents();
